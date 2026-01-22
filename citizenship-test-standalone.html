@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>US Citizenship Test Interview Simulator</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+    const { createRoot } = ReactDOM;
+
+    // Lucide icons
+    const CheckCircle = (props) => React.createElement('svg', {
+      ...props,
+      xmlns: "http://www.w3.org/2000/svg",
+      width: props.size || 24,
+      height: props.size || 24,
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: "2",
+      strokeLinecap: "round",
+      strokeLinejoin: "round"
+    }, React.createElement('path', { d: "M22 11.08V12a10 10 0 1 1-5.93-9.14" }), React.createElement('polyline', { points: "22 4 12 14.01 9 11.01" }));
+
+    const XCircle = (props) => React.createElement('svg', {
+      ...props,
+      xmlns: "http://www.w3.org/2000/svg",
+      width: props.size || 24,
+      height: props.size || 24,
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: "2",
+      strokeLinecap: "round",
+      strokeLinejoin: "round"
+    }, React.createElement('circle', { cx: "12", cy: "12", r: "10" }), React.createElement('line', { x1: "15", y1: "9", x2: "9", y2: "15" }), React.createElement('line', { x1: "9", y1: "9", x2: "15", y2: "15" }));
+
+    const RotateCcw = (props) => React.createElement('svg', {
+      ...props,
+      xmlns: "http://www.w3.org/2000/svg",
+      width: props.size || 24,
+      height: props.size || 24,
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: "2",
+      strokeLinecap: "round",
+      strokeLinejoin: "round"
+    }, React.createElement('polyline', { points: "1 4 1 10 7 10" }), React.createElement('path', { d: "M3.51 15a9 9 0 1 0 2.13-9.36L1 10" }));
+
+    const QUESTIONS = [
+      { q: "What is the supreme law of the land?", a: ["the Constitution"] },
+      { q: "What does the Constitution do?", a: ["sets up the government", "defines the government", "protects basic rights of Americans"] },
+      { q: "The idea of self-government is in the first three words of the Constitution. What are these words?", a: ["We the People"] },
+      { q: "What is an amendment?", a: ["a change to the Constitution", "an addition to the Constitution"] },
+      { q: "What do we call the first ten amendments to the Constitution?", a: ["the Bill of Rights"] },
+      { q: "What is one right or freedom from the First Amendment?", a: ["speech", "religion", "assembly", "press", "petition the government"] },
+      { q: "How many amendments does the Constitution have?", a: ["twenty-seven", "27"] },
+      { q: "What did the Declaration of Independence do?", a: ["announced our independence from Great Britain", "declared our independence from Great Britain", "said that the United States is free from Great Britain"] },
+      { q: "What are two rights in the Declaration of Independence?", a: ["life", "liberty", "pursuit of happiness"] },
+      { q: "What is freedom of religion?", a: ["You can practice any religion, or not practice a religion"] },
+      { q: "What is the economic system in the United States?", a: ["capitalist economy", "market economy", "free market"] },
+      { q: "What is the 'rule of law'?", a: ["Everyone must follow the law", "Leaders must obey the law", "Government must obey the law", "No one is above the law"] },
+      { q: "Name one branch or part of the government.", a: ["Congress", "legislative", "President", "executive", "the courts", "judicial"] },
+      { q: "What stops one branch of government from becoming too powerful?", a: ["checks and balances", "separation of powers"] },
+      { q: "Who is in charge of the executive branch?", a: ["the President"] },
+      { q: "Who makes federal laws?", a: ["Congress", "Senate and House of Representatives", "U.S. or national legislature"] },
+      { q: "What are the two parts of the U.S. Congress?", a: ["the Senate", "Senate", "House of Representatives", "the House", "House"] },
+      { q: "How many U.S. Senators are there?", a: ["one hundred", "100"] },
+      { q: "We elect a U.S. Senator for how many years?", a: ["six", "6"] },
+      { q: "Who is one of your state's U.S. Senators now?", a: ["Chuck Schumer", "Charles Schumer", "Schumer", "Kirsten Gillibrand", "Gillibrand"] },
+      { q: "The House of Representatives has how many voting members?", a: ["four hundred thirty-five", "435"] },
+      { q: "We elect a U.S. Representative for how many years?", a: ["two", "2"] },
+      { q: "Name your U.S. Representative.", a: ["Daniel Goldman", "Daniel S. Goldman", "Goldman"] },
+      { q: "Who does a U.S. Senator represent?", a: ["all people of the state"] },
+      { q: "Why do some states have more Representatives than other states?", a: ["because of the state's population", "because they have more people", "because some states have more people"] },
+      { q: "We elect a President for how many years?", a: ["four", "4"] },
+      { q: "In what month do we vote for President?", a: ["November"] },
+      { q: "What is the name of the President of the United States now?", a: ["Donald J. Trump", "Donald Trump", "Trump"] },
+      { q: "What is the name of the Vice President of the United States now?", a: ["JD Vance", "Vance"] },
+      { q: "If the President can no longer serve, who becomes President?", a: ["the Vice President"] },
+      { q: "If both the President and the Vice President can no longer serve, who becomes President?", a: ["the Speaker of the House"] },
+      { q: "Who is the Commander in Chief of the military?", a: ["the President"] },
+      { q: "Who signs bills to become laws?", a: ["the President"] },
+      { q: "Who vetoes bills?", a: ["the President"] },
+      { q: "What does the President's Cabinet do?", a: ["advises the President"] },
+      { q: "What are two Cabinet-level positions?", a: ["Secretary of Agriculture", "Secretary of Commerce", "Secretary of Defense", "Secretary of Education", "Secretary of Energy", "Secretary of Health and Human Services", "Secretary of Homeland Security", "Secretary of Housing and Urban Development", "Secretary of the Interior", "Secretary of Labor", "Secretary of State", "Secretary of Transportation", "Secretary of the Treasury", "Secretary of Veterans Affairs", "Attorney General", "Vice President"] },
+      { q: "What does the judicial branch do?", a: ["reviews laws", "explains laws", "resolves disputes", "decides if a law goes against the Constitution"] },
+      { q: "What is the highest court in the United States?", a: ["the Supreme Court"] },
+      { q: "How many justices are on the Supreme Court?", a: ["nine (9)", "nine", "9"] },
+      { q: "Who is the Chief Justice of the United States now?", a: ["John Roberts", "John G. Roberts, Jr.", "John G. Roberts Jr.", "John G. Roberts Jr", "Roberts"] },
+      { q: "Under our Constitution, some powers belong to the federal government. What is one power of the federal government?", a: ["to print money", "to declare war", "to create an army", "to make treaties"] },
+      { q: "Under our Constitution, some powers belong to the states. What is one power of the states?", a: ["provide schooling and education", "provide protection (police)", "provide safety (fire departments)", "give a driver's license", "approve zoning and land use"] },
+      { q: "Who is the Governor of your state now?", a: ["Kathy Hochul", "Hochul"] },
+      { q: "What is the capital of your state?", a: ["Albany"] },
+      { q: "What are the two major political parties in the United States?", a: ["Democratic", "Democratic Party", "Republican", "Republican Party"] },
+      { q: "What is the political party of the President now?", a: ["Republican (Party)", "Republican Party", "Republican"] },
+      { q: "What is the name of the Speaker of the House of Representatives now?", a: ["Mike Johnson", "Johnson", "James Michael Johnson"] },
+      { q: "There are four amendments to the Constitution about who can vote. Describe one of them.", a: ["Citizens eighteen and older can vote", "You don't have to pay to vote", "Any citizen can vote", "A male citizen of any race can vote"] },
+      { q: "What is one responsibility that is only for United States citizens?", a: ["serve on a jury", "vote in a federal election"] },
+      { q: "Name one right only for United States citizens.", a: ["vote in a federal election", "run for federal office"] },
+      { q: "What are two rights of everyone living in the United States?", a: ["freedom of expression", "freedom of speech", "freedom of assembly", "freedom to petition the government", "freedom of religion", "the right to bear arms"] },
+      { q: "What do we show loyalty to when we say the Pledge of Allegiance?", a: ["the United States", "the flag"] },
+      { q: "What is one promise you make when you become a United States citizen?", a: ["give up loyalty to other countries", "defend the Constitution and laws of the United States", "obey the laws of the United States", "serve in the U.S. military (if needed)", "serve the nation (if needed)", "be loyal to the United States"] },
+      { q: "How old do citizens have to be to vote for President?", a: ["eighteen and older", "eighteen", "18 and older", "18"] },
+      { q: "What are two ways that Americans can participate in their democracy?", a: ["vote", "join a political party", "help with a campaign", "join a civic group", "join a community group", "give an elected official your opinion on an issue", "call Senators and Representatives", "publicly support or oppose an issue or policy", "run for office", "write to a newspaper"] },
+      { q: "When is the last day you can send in federal income tax forms?", a: ["April 15"] },
+      { q: "When must all men register for the Selective Service?", a: ["at age eighteen", "at age 18", "between eighteen and twenty-six", "between 18 and 26"] },
+      { q: "What is one reason colonists came to America?", a: ["freedom", "political liberty", "religious freedom", "economic opportunity", "practice their religion", "escape persecution"] },
+      { q: "Who lived in America before the Europeans arrived?", a: ["American Indians", "Native Americans"] },
+      { q: "What group of people was taken to America and sold as slaves?", a: ["Africans", "people from Africa"] },
+      { q: "Why did the colonists fight the British?", a: ["because of high taxes", "because the British army stayed in their houses", "because they didn't have self-government"] },
+      { q: "Who wrote the Declaration of Independence?", a: ["Thomas Jefferson"] },
+      { q: "When was the Declaration of Independence adopted?", a: ["July 4, 1776", "July 4th, 1776", "July fourth, 1776", "1776"] },
+      { q: "There were 13 original states. Name three.", a: ["New Hampshire", "Massachusetts", "Rhode Island", "Connecticut", "New York", "New Jersey", "Pennsylvania", "Delaware", "Maryland", "Virginia", "North Carolina", "South Carolina", "Georgia"] },
+      { q: "What happened at the Constitutional Convention?", a: ["The Constitution was written", "The Founding Fathers wrote the Constitution"] },
+      { q: "When was the Constitution written?", a: ["1787"] },
+      { q: "The Federalist Papers supported the passage of the U.S. Constitution. Name one of the writers.", a: ["James Madison", "Alexander Hamilton", "John Jay", "Publius"] },
+      { q: "What is one thing Benjamin Franklin is famous for?", a: ["U.S. diplomat", "oldest member of the Constitutional Convention", "first Postmaster General of the United States", "writer of 'Poor Richard's Almanac'", "started the first free libraries"] },
+      { q: "Who is the 'Father of Our Country'?", a: ["George Washington"] },
+      { q: "Who was the first President?", a: ["George Washington"] },
+      { q: "What territory did the United States buy from France in 1803?", a: ["the Louisiana Territory", "Louisiana"] },
+      { q: "Name one war fought by the United States in the 1800s.", a: ["War of 1812", "Mexican-American War", "Civil War", "Spanish-American War"] },
+      { q: "Name the U.S. war between the North and the South.", a: ["the Civil War", "the War between the States"] },
+      { q: "Name one problem that led to the Civil War.", a: ["slavery", "economic reasons", "states' rights"] },
+      { q: "What was one important thing that Abraham Lincoln did?", a: ["freed the slaves", "saved the Union", "led the United States during the Civil War"] },
+      { q: "What did the Emancipation Proclamation do?", a: ["freed the slaves", "freed slaves in the Confederacy", "freed slaves in the Confederate states", "freed slaves in most Southern states"] },
+      { q: "What did Susan B. Anthony do?", a: ["fought for women's rights", "fought for civil rights"] },
+      { q: "Name one war fought by the United States in the 1900s.", a: ["World War I", "World War II", "Korean War", "Vietnam War", "Gulf War"] },
+      { q: "Who was President during World War I?", a: ["Woodrow Wilson"] },
+      { q: "Who was President during the Great Depression and World War II?", a: ["Franklin Roosevelt"] },
+      { q: "Who did the United States fight in World War II? (Name all three countries)", a: ["Japan", "Germany", "Italy"] },
+      { q: "Before he was President, Eisenhower was a general. What war was he in?", a: ["World War II"] },
+      { q: "During the Cold War, what was the main concern of the United States?", a: ["Communism"] },
+      { q: "What movement tried to end racial discrimination?", a: ["civil rights movement"] },
+      { q: "What did Martin Luther King, Jr. do?", a: ["fought for civil rights", "worked for equality for all Americans"] },
+      { q: "What major event happened on September 11, 2001, in the United States?", a: ["Terrorists attacked the United States"] },
+      { q: "Name one American Indian tribe in the United States.", a: ["Cherokee", "Navajo", "Sioux", "Chippewa", "Choctaw", "Pueblo", "Apache", "Iroquois", "Creek", "Blackfeet", "Seminole", "Cheyenne", "Arawak", "Shawnee", "Mohegan", "Huron", "Oneida", "Lakota", "Crow", "Teton", "Hopi", "Inuit"] },
+      { q: "Name one of the two longest rivers in the United States.", a: ["Missouri River", "Mississippi River"] },
+      { q: "What ocean is on the West Coast of the United States?", a: ["Pacific Ocean"] },
+      { q: "What ocean is on the East Coast of the United States?", a: ["Atlantic Ocean"] },
+      { q: "Name one U.S. territory.", a: ["Puerto Rico", "U.S. Virgin Islands", "American Samoa", "Northern Mariana Islands", "Guam"] },
+      { q: "Name one state that borders Canada.", a: ["Maine", "New Hampshire", "Vermont", "New York", "Pennsylvania", "Ohio", "Michigan", "Minnesota", "North Dakota", "Montana", "Idaho", "Washington", "Alaska"] },
+      { q: "Name one state that borders Mexico.", a: ["California", "Arizona", "New Mexico", "Texas"] },
+      { q: "What is the capital of the United States?", a: ["Washington, D.C."] },
+      { q: "Where is the Statue of Liberty?", a: ["New York Harbor", "Liberty Island", "New Jersey", "near New York City", "on the Hudson River"] },
+      { q: "Why does the flag have 13 stripes?", a: ["because there were 13 original colonies", "because the stripes represent the original colonies"] },
+      { q: "Why does the flag have 50 stars?", a: ["because there is one star for each state", "because each star represents a state", "because there are 50 states"] },
+      { q: "What is the name of the national anthem?", a: ["The Star-Spangled Banner"] },
+      { q: "When do we celebrate Independence Day?", a: ["July 4", "July 4th", "July fourth"] },
+      { q: "Name two national U.S. holidays.", a: ["New Year's Day", "Martin Luther King, Jr. Day", "Presidents' Day", "Memorial Day", "Independence Day", "Labor Day", "Columbus Day", "Veterans Day", "Thanksgiving", "Christmas"] }
+    ];
+
+    function CitizenshipTest() {
+      const [gameState, setGameState] = useState('intro');
+      const [selectedQuestions, setSelectedQuestions] = useState([]);
+      const [currentQuestion, setCurrentQuestion] = useState(0);
+      const [userAnswer, setUserAnswer] = useState('');
+      const [answers, setAnswers] = useState([]);
+      const [score, setScore] = useState(0);
+
+      const numberWords = {
+        '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four',
+        '5': 'five', '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine',
+        '10': 'ten', '11': 'eleven', '12': 'twelve', '13': 'thirteen',
+        '14': 'fourteen', '15': 'fifteen', '16': 'sixteen', '17': 'seventeen',
+        '18': 'eighteen', '19': 'nineteen', '20': 'twenty', '21': 'twenty-one',
+        '22': 'twenty-two', '23': 'twenty-three', '24': 'twenty-four',
+        '25': 'twenty-five', '26': 'twenty-six', '27': 'twenty-seven',
+        '50': 'fifty', '100': 'one hundred', '435': 'four hundred thirty-five'
+      };
+
+      const normalizeNumber = (word) => {
+        if (/^\d+$/.test(word)) {
+          return numberWords[word] || word;
+        }
+        const reverseMap = Object.entries(numberWords).find(([num, text]) => text === word);
+        if (reverseMap) {
+          return reverseMap[0];
+        }
+        return word;
+      };
+
+      const normalizeWord = (word) => {
+        word = word.toLowerCase();
+        if (word.endsWith('ies')) return word.slice(0, -3) + 'y';
+        if (word.endsWith('es') && word.length > 4) return word.slice(0, -2);
+        if (word.endsWith('ing') && word.length > 5) {
+          const stem = word.slice(0, -3);
+          if (stem.length >= 3) return stem;
+        }
+        if (word.endsWith('ed') && word.length > 4) return word.slice(0, -2);
+        if (word.endsWith('s') && word.length > 3 && !word.endsWith('ss')) return word.slice(0, -1);
+        return word;
+      };
+
+      const wordsAreSimilar = (word1, word2) => {
+        word1 = word1.toLowerCase();
+        word2 = word2.toLowerCase();
+        
+        if (word1 === word2) return true;
+        
+        const num1 = normalizeNumber(word1);
+        const num2 = normalizeNumber(word2);
+        if (num1 === num2) return true;
+        if (num1 === word2 || num2 === word1) return true;
+        
+        if (word1.includes(word2) || word2.includes(word1)) return true;
+        
+        const norm1 = normalizeWord(word1);
+        const norm2 = normalizeWord(word2);
+        if (norm1 === norm2) return true;
+        
+        if (word1.length >= 4 && word2.length >= 4) {
+          const minLen = Math.min(word1.length, word2.length);
+          const prefixLen = Math.min(minLen - 1, 4);
+          if (word1.substring(0, prefixLen) === word2.substring(0, prefixLen)) {
+            return true;
+          }
+        }
+        
+        return false;
+      };
+
+      const checkAnswer = (userAns, correctAnswers, question) => {
+        const normalized = userAns.toLowerCase().trim();
+        
+        let requiredCount = 1;
+        const lowerQuestion = question.toLowerCase();
+        
+        if ((lowerQuestion.includes('name two') || 
+             lowerQuestion.includes('what are two') || 
+             lowerQuestion.includes('what are the two')) &&
+            !lowerQuestion.includes('what are these')) {
+          requiredCount = 2;
+        } else if ((lowerQuestion.includes('name three') || 
+                    lowerQuestion.includes('what are three') ||
+                    lowerQuestion.includes('all three')) &&
+                   !lowerQuestion.includes('what are these')) {
+          requiredCount = 3;
+        }
+        
+        const userParts = normalized
+          .split(/[,;]|\band\b|\n/)
+          .map(part => part.trim())
+          .filter(part => part.length > 0);
+        
+        const fillerWords = new Set(['the', 'of', 'a', 'an', 'and', 'or', 'in', 'on', 'at', 'to', 'for']);
+        
+        const matchedAnswers = [];
+        const matchedConcepts = new Set();
+        const usedParts = new Set();
+        
+        userParts.forEach(userPart => {
+          if (usedParts.has(userPart)) return;
+          
+          correctAnswers.forEach(correctAns => {
+            const normalizedCorrect = correctAns.toLowerCase().trim();
+            
+            if (matchedAnswers.some(m => m.toLowerCase() === normalizedCorrect)) return;
+            
+            const conceptKey = normalizedCorrect.split(/\s+/).filter(w => !fillerWords.has(w)).join(' ');
+            if (matchedConcepts.has(conceptKey)) return;
+            
+            if (userPart.includes(normalizedCorrect) || normalizedCorrect.includes(userPart)) {
+              matchedAnswers.push(correctAns);
+              matchedConcepts.add(conceptKey);
+              usedParts.add(userPart);
+              return;
+            }
+            
+            const userPartWithNumbers = userPart.split(/\s+/).map(w => {
+              const normalized = normalizeNumber(w);
+              return normalized !== w ? normalized : w;
+            }).join(' ');
+            const correctWithNumbers = normalizedCorrect.split(/\s+/).map(w => {
+              const normalized = normalizeNumber(w);
+              return normalized !== w ? normalized : w;
+            }).join(' ');
+            
+            if (userPartWithNumbers === correctWithNumbers ||
+                userPartWithNumbers.includes(correctWithNumbers) ||
+                correctWithNumbers.includes(userPartWithNumbers)) {
+              matchedAnswers.push(correctAns);
+              matchedConcepts.add(conceptKey);
+              usedParts.add(userPart);
+              return;
+            }
+            
+            const userWords = userPart.split(/\s+/).filter(w => !fillerWords.has(w) && w.length > 2);
+            const correctWords = normalizedCorrect.split(/\s+/).filter(w => !fillerWords.has(w) && w.length > 2);
+            
+            if (userWords.length === 0 || correctWords.length === 0) return;
+            
+            if (correctWords.length > 1 && userWords.length > 1) {
+              const matches = correctWords.filter(cw => 
+                userWords.some(uw => wordsAreSimilar(uw, cw))
+              );
+              
+              const requiredMatches = correctWords.length <= 2 ? correctWords.length : Math.ceil(correctWords.length * 0.6);
+              
+              if (matches.length >= requiredMatches) {
+                matchedAnswers.push(correctAns);
+                matchedConcepts.add(conceptKey);
+                usedParts.add(userPart);
+                return;
+              }
+            }
+            
+            if (correctWords.length === 1 && userWords.length === 1) {
+              if (wordsAreSimilar(userWords[0], correctWords[0])) {
+                matchedAnswers.push(correctAns);
+                matchedConcepts.add(conceptKey);
+                usedParts.add(userPart);
+                return;
+              }
+            }
+          });
+        });
+        
+        const isCorrect = requiredCount === 1 ? matchedAnswers.length >= 1 : matchedAnswers.length >= requiredCount;
+        
+        return { isCorrect, matchedAnswers };
+      };
+
+      const shuffleArray = (array) => {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+      };
+
+      const startTest = () => {
+        const shuffled = shuffleArray(QUESTIONS);
+        const selected = shuffled.slice(0, 10);
+        setSelectedQuestions(selected);
+        setCurrentQuestion(0);
+        setUserAnswer('');
+        setAnswers([]);
+        setScore(0);
+        setGameState('testing');
+      };
+
+      const submitAnswer = () => {
+        const question = selectedQuestions[currentQuestion];
+        const result = checkAnswer(userAnswer, question.a, question.q);
+        
+        const newAnswers = [...answers, { 
+          question: question.q,
+          userAnswer,
+          correctAnswers: question.a,
+          matchedAnswers: result.matchedAnswers,
+          isCorrect: result.isCorrect
+        }];
+        setAnswers(newAnswers);
+        
+        if (result.isCorrect) {
+          setScore(score + 1);
+        }
+
+        if (currentQuestion < 9) {
+          setCurrentQuestion(currentQuestion + 1);
+          setUserAnswer('');
+        } else {
+          setGameState('results');
+        }
+      };
+
+      if (gameState === 'intro') {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-blue-900 to-red-800 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-2xl p-8 max-w-2xl w-full">
+              <div className="text-center">
+                <h1 className="text-4xl font-bold text-blue-900 mb-4">
+                  U.S. Citizenship Test
+                </h1>
+                <h2 className="text-xl text-gray-700 mb-6">Interview Simulator</h2>
+                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 text-left">
+                  <p className="text-gray-700 mb-3">
+                    Welcome to the U.S. Citizenship Test simulator. During the actual naturalization interview, 
+                    the USCIS officer will ask you up to 10 questions from the list of 100 civics questions.
+                  </p>
+                  <p className="text-gray-700 mb-3">
+                    <strong>To pass:</strong> You must answer at least 6 out of 10 questions correctly.
+                  </p>
+                  <p className="text-gray-700 mb-3">
+                    <strong>Important:</strong> Some questions require multiple answers (e.g., "Name two rights...", "What are two parts..."). 
+                    Make sure to provide all required answers separated by commas or "and".
+                  </p>
+                  <p className="text-gray-700">
+                    This simulator will randomly select 10 questions for you to answer. Type your answer 
+                    for each question, and you'll receive your score at the end.
+                  </p>
+                </div>
+                <button
+                  onClick={startTest}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition duration-200"
+                >
+                  Start Interview
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      if (gameState === 'testing') {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-blue-900 to-red-800 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-2xl p-8 max-w-2xl w-full">
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-semibold text-gray-600">
+                    Question {currentQuestion + 1} of 10
+                  </span>
+                  <span className="text-sm font-semibold text-gray-600">
+                    Score: {score}/{currentQuestion}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${((currentQuestion + 1) / 10) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                  {selectedQuestions[currentQuestion].q}
+                </h2>
+                {(selectedQuestions[currentQuestion].q.toLowerCase().includes('two') || 
+                  selectedQuestions[currentQuestion].q.toLowerCase().includes('three') ||
+                  selectedQuestions[currentQuestion].q.toLowerCase().includes('all three')) && (
+                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-4">
+                    <p className="text-sm text-yellow-800">
+                      <strong>Note:</strong> This question requires multiple answers. Please separate them with commas, semicolons, or the word "and".
+                    </p>
+                    <p className="text-xs text-yellow-700 mt-1">
+                      Example: "answer one, answer two" or "answer one and answer two"
+                    </p>
+                  </div>
+                )}
+                <textarea
+                  value={userAnswer}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey && userAnswer.trim()) {
+                      e.preventDefault();
+                      submitAnswer();
+                    }
+                  }}
+                  placeholder="Type your answer here..."
+                  rows={(selectedQuestions[currentQuestion].q.toLowerCase().includes('two') || 
+                         selectedQuestions[currentQuestion].q.toLowerCase().includes('three') ||
+                         selectedQuestions[currentQuestion].q.toLowerCase().includes('all three')) ? 3 : 2}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg resize-none"
+                  autoFocus
+                />
+                <p className="text-sm text-gray-500 mt-2">
+                  Press Enter or click Submit to continue
+                </p>
+              </div>
+
+              <button
+                onClick={submitAnswer}
+                disabled={!userAnswer.trim()}
+                className={`w-full py-3 rounded-lg font-bold text-lg transition duration-200 ${
+                  userAnswer.trim()
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                Submit Answer
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      if (gameState === 'results') {
+        const passed = score >= 6;
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-blue-900 to-red-800 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-2xl p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="text-center mb-8">
+                <h1 className="text-4xl font-bold text-gray-800 mb-4">
+                  Test Complete!
+                </h1>
+                <div className={`text-6xl font-bold mb-4 ${passed ? 'text-green-600' : 'text-red-600'}`}>
+                  {score} / 10
+                </div>
+                <p className={`text-2xl font-semibold ${passed ? 'text-green-600' : 'text-red-600'}`}>
+                  {passed ? 'PASSED! ✓' : 'FAILED'}
+                </p>
+                <p className="text-gray-600 mt-2">
+                  {passed 
+                    ? 'Congratulations! You answered enough questions correctly.'
+                    : 'You need at least 6 correct answers to pass. Please study and try again.'}
+                </p>
+              </div>
+
+              <div className="space-y-4 mb-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">Review Your Answers:</h2>
+                {answers.map((ans, idx) => (
+                  <div 
+                    key={idx}
+                    className={`p-4 rounded-lg border-2 ${
+                      ans.isCorrect ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2 mb-2">
+                      {ans.isCorrect ? (
+                        <CheckCircle className="text-green-600 flex-shrink-0 mt-1" size={20} />
+                      ) : (
+                        <XCircle className="text-red-600 flex-shrink-0 mt-1" size={20} />
+                      )}
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-800 mb-1">
+                          Q{idx + 1}: {ans.question}
+                        </p>
+                        <p className="text-gray-700">
+                          <strong>Your answer:</strong> {ans.userAnswer || '(No answer provided)'}
+                        </p>
+                        {ans.matchedAnswers && ans.matchedAnswers.length > 0 && (
+                          <p className={`mt-1 ${ans.isCorrect ? 'text-green-700' : 'text-orange-700'}`}>
+                            <strong>Recognized:</strong> {ans.matchedAnswers.join(', ')}
+                            {(ans.question.toLowerCase().includes('two') || 
+                              ans.question.toLowerCase().includes('three') ||
+                              ans.question.toLowerCase().includes('all three')) && 
+                              ` (${ans.matchedAnswers.length} of ${
+                                ans.question.toLowerCase().includes('all three') || ans.question.toLowerCase().includes('three') ? '3' : '2'
+                              } required)`}
+                          </p>
+                        )}
+                        {ans.isCorrect && ans.correctAnswers.length > ans.matchedAnswers.length && (
+                          <p className="text-gray-600 mt-1 text-sm">
+                            <strong>Other possible answers:</strong> {
+                              ans.correctAnswers
+                                .filter(ca => !ans.matchedAnswers.some(ma => 
+                                  ma.toLowerCase() === ca.toLowerCase()
+                                ))
+                                .slice(0, 5)
+                                .join('; ')
+                            }
+                            {ans.correctAnswers.length - ans.matchedAnswers.length > 5 && 
+                              ` (and ${ans.correctAnswers.length - ans.matchedAnswers.length - 5} more)`}
+                          </p>
+                        )}
+                        {!ans.isCorrect && (
+                          <>
+                            {(ans.question.toLowerCase().includes('two') || 
+                              ans.question.toLowerCase().includes('three') ||
+                              ans.question.toLowerCase().includes('all three')) && (
+                              <p className="text-sm text-amber-700 mt-1 italic">
+                                This question requires {
+                                  ans.question.toLowerCase().includes('all three') || ans.question.toLowerCase().includes('three') ? 'three' : 'two'
+                                } correct answers.
+                                {ans.matchedAnswers && ans.matchedAnswers.length > 0 && 
+                                  ` You provided ${ans.matchedAnswers.length}.`}
+                              </p>
+                            )}
+                            <p className="text-gray-700 mt-1">
+                              <strong>Accepted answers include:</strong> {ans.correctAnswers.slice(0, 8).join(', ')}
+                              {ans.correctAnswers.length > 8 && ` (and ${ans.correctAnswers.length - 8} more)`}
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={startTest}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition duration-200"
+              >
+                <RotateCcw size={20} />
+                Take Test Again
+              </button>
+            </div>
+          </div>
+        );
+      }
+    }
+
+    const root = createRoot(document.getElementById('root'));
+    root.render(<CitizenshipTest />);
+  </script>
+</body>
+</html>
