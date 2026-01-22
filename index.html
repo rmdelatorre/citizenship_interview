@@ -14,7 +14,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState } = React;
+    const { useState, useEffect } = React;
     const { createRoot } = ReactDOM;
 
     // Lucide icons
@@ -56,6 +56,32 @@
       strokeLinecap: "round",
       strokeLinejoin: "round"
     }, React.createElement('polyline', { points: "1 4 1 10 7 10" }), React.createElement('path', { d: "M3.51 15a9 9 0 1 0 2.13-9.36L1 10" }));
+
+    const BarChart = (props) => React.createElement('svg', {
+      ...props,
+      xmlns: "http://www.w3.org/2000/svg",
+      width: props.size || 24,
+      height: props.size || 24,
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: "2",
+      strokeLinecap: "round",
+      strokeLinejoin: "round"
+    }, React.createElement('line', { x1: "12", y1: "20", x2: "12", y2: "10" }), React.createElement('line', { x1: "18", y1: "20", x2: "18", y2: "4" }), React.createElement('line', { x1: "6", y1: "20", x2: "6", y2: "16" }));
+
+    const XIcon = (props) => React.createElement('svg', {
+      ...props,
+      xmlns: "http://www.w3.org/2000/svg",
+      width: props.size || 24,
+      height: props.size || 24,
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: "2",
+      strokeLinecap: "round",
+      strokeLinejoin: "round"
+    }, React.createElement('line', { x1: "18", y1: "6", x2: "6", y2: "18" }), React.createElement('line', { x1: "6", y1: "6", x2: "18", y2: "18" }));
 
     const QUESTIONS = [
       { q: "What is the supreme law of the land?", a: ["the Constitution"] },
@@ -160,6 +186,66 @@
       { q: "Name two national U.S. holidays.", a: ["New Year's Day", "Martin Luther King, Jr. Day", "Presidents' Day", "Memorial Day", "Independence Day", "Labor Day", "Columbus Day", "Veterans Day", "Thanksgiving", "Christmas"] }
     ];
 
+    // History storage functions
+    const HISTORY_KEY = 'citizenship_test_history';
+
+    const loadHistory = () => {
+      try {
+        const stored = localStorage.getItem(HISTORY_KEY);
+        if (stored) {
+          return JSON.parse(stored);
+        }
+      } catch (e) {
+        console.error('Failed to load history:', e);
+      }
+      return { version: 1, totalAttempts: 0, totalPassed: 0, questionStats: {} };
+    };
+
+    const saveHistory = (history) => {
+      try {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+      } catch (e) {
+        console.error('Failed to save history:', e);
+      }
+    };
+
+    const recordAttempt = (history, selectedQuestions, answers, passed) => {
+      const newHistory = { ...history };
+      newHistory.totalAttempts++;
+      if (passed) newHistory.totalPassed++;
+
+      selectedQuestions.forEach((q, idx) => {
+        const questionIndex = QUESTIONS.findIndex(question => question.q === q.q);
+        if (questionIndex === -1) return;
+
+        if (!newHistory.questionStats[questionIndex]) {
+          newHistory.questionStats[questionIndex] = { timesAsked: 0, timesCorrect: 0 };
+        }
+        newHistory.questionStats[questionIndex].timesAsked++;
+        if (answers[idx].isCorrect) {
+          newHistory.questionStats[questionIndex].timesCorrect++;
+        }
+      });
+
+      return newHistory;
+    };
+
+    const getQuestionStats = (history) => {
+      const stats = [];
+      Object.entries(history.questionStats).forEach(([idx, data]) => {
+        const questionIndex = parseInt(idx);
+        const successRate = data.timesAsked > 0 ? (data.timesCorrect / data.timesAsked) * 100 : 0;
+        stats.push({
+          questionIndex,
+          question: QUESTIONS[questionIndex].q,
+          timesAsked: data.timesAsked,
+          timesCorrect: data.timesCorrect,
+          successRate
+        });
+      });
+      return stats.sort((a, b) => a.successRate - b.successRate);
+    };
+
     function CitizenshipTest() {
       const [gameState, setGameState] = useState('intro');
       const [selectedQuestions, setSelectedQuestions] = useState([]);
@@ -167,6 +253,13 @@
       const [userAnswer, setUserAnswer] = useState('');
       const [answers, setAnswers] = useState([]);
       const [score, setScore] = useState(0);
+      const [history, setHistory] = useState(null);
+      const [showProgress, setShowProgress] = useState(false);
+
+      // Load history on mount
+      useEffect(() => {
+        setHistory(loadHistory());
+      }, []);
 
       const numberWords = {
         '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four',
@@ -373,8 +466,108 @@
           setCurrentQuestion(currentQuestion + 1);
           setUserAnswer('');
         } else {
+          // Record the attempt in history
+          const finalScore = result.isCorrect ? score + 1 : score;
+          const passed = finalScore >= 6;
+          const updatedHistory = recordAttempt(history, selectedQuestions, newAnswers, passed);
+          setHistory(updatedHistory);
+          saveHistory(updatedHistory);
           setGameState('results');
         }
+      };
+
+      const clearHistory = () => {
+        const emptyHistory = { version: 1, totalAttempts: 0, totalPassed: 0, questionStats: {} };
+        setHistory(emptyHistory);
+        saveHistory(emptyHistory);
+        setShowProgress(false);
+      };
+
+      const hasAnyProgress = history && history.totalAttempts > 0;
+
+      const ProgressModal = () => {
+        if (!showProgress || !history) return null;
+
+        const stats = getQuestionStats(history);
+        const totalQuestions = Object.keys(history.questionStats).length;
+        const totalAsked = Object.values(history.questionStats).reduce((sum, s) => sum + s.timesAsked, 0);
+        const totalCorrect = Object.values(history.questionStats).reduce((sum, s) => sum + s.timesCorrect, 0);
+        const overallAccuracy = totalAsked > 0 ? ((totalCorrect / totalAsked) * 100).toFixed(1) : 0;
+        const passRate = history.totalAttempts > 0 ? ((history.totalPassed / history.totalAttempts) * 100).toFixed(0) : 0;
+
+        const getRowColor = (rate) => {
+          if (rate < 60) return 'bg-red-50';
+          if (rate < 80) return 'bg-yellow-50';
+          return 'bg-green-50';
+        };
+
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="p-6 border-b flex justify-between items-start">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">Your Progress</h2>
+                  <div className="mt-2 flex gap-6 text-sm text-gray-600">
+                    <span>Tests taken: <strong>{history.totalAttempts}</strong></span>
+                    <span>Pass rate: <strong>{passRate}%</strong></span>
+                    <span>Overall accuracy: <strong>{overallAccuracy}%</strong></span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowProgress(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <XIcon size={24} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6">
+                {stats.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">No question data yet. Complete a test to see your performance.</p>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="text-sm text-gray-500 mb-4">
+                      Questions sorted by success rate (lowest first) - {totalQuestions} unique questions attempted
+                    </div>
+                    {stats.map((stat, idx) => (
+                      <div
+                        key={stat.questionIndex}
+                        className={`p-3 rounded-lg border ${getRowColor(stat.successRate)}`}
+                      >
+                        <div className="flex justify-between items-start gap-4">
+                          <p className="text-gray-800 flex-1 text-sm">
+                            <span className="text-gray-500">Q{stat.questionIndex + 1}:</span> {stat.question}
+                          </p>
+                          <div className="text-right text-sm whitespace-nowrap">
+                            <span className="font-semibold">{stat.successRate.toFixed(0)}%</span>
+                            <span className="text-gray-500 ml-2">
+                              ({stat.timesCorrect}/{stat.timesAsked})
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4 border-t flex justify-between">
+                <button
+                  onClick={clearHistory}
+                  className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition duration-200"
+                >
+                  Clear Progress
+                </button>
+                <button
+                  onClick={() => setShowProgress(false)}
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition duration-200"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        );
       };
 
       if (gameState === 'intro') {
@@ -406,14 +599,26 @@
                     vibe-coded by Rafael using Claude Code in January 2026
                   </p>
                 </div>
-                <button
-                  onClick={startTest}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition duration-200"
-                >
-                  Start Interview
-                </button>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <button
+                    onClick={startTest}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition duration-200"
+                  >
+                    Start Interview
+                  </button>
+                  {hasAnyProgress && (
+                    <button
+                      onClick={() => setShowProgress(true)}
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-8 rounded-lg text-lg transition duration-200 flex items-center justify-center gap-2"
+                    >
+                      <BarChart size={20} />
+                      View Progress
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
+            <ProgressModal />
           </div>
         );
       }
@@ -586,14 +791,24 @@
                 ))}
               </div>
 
-              <button
-                onClick={startTest}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition duration-200"
-              >
-                <RotateCcw size={20} />
-                Take Test Again
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={startTest}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition duration-200"
+                >
+                  <RotateCcw size={20} />
+                  Take Test Again
+                </button>
+                <button
+                  onClick={() => setShowProgress(true)}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-lg transition duration-200"
+                  title="View Progress"
+                >
+                  <BarChart size={20} />
+                </button>
+              </div>
             </div>
+            <ProgressModal />
           </div>
         );
       }
