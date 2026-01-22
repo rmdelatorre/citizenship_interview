@@ -243,7 +243,12 @@
           successRate
         });
       });
-      return stats.sort((a, b) => a.successRate - b.successRate);
+      return stats.sort((a, b) => {
+        if (a.successRate !== b.successRate) {
+          return a.successRate - b.successRate;
+        }
+        return b.timesAsked - a.timesAsked;
+      });
     };
 
     function CitizenshipTest() {
@@ -434,9 +439,51 @@
         return shuffled;
       };
 
+      const selectWeightedQuestions = (history) => {
+        if (!history || Object.keys(history.questionStats).length === 0) {
+          // No history - use uniform random
+          return shuffleArray(QUESTIONS).slice(0, 10);
+        }
+
+        // Calculate weights for each question
+        const weighted = QUESTIONS.map((q, idx) => {
+          const stats = history.questionStats[idx];
+          let weight;
+          if (!stats) {
+            weight = 3; // Never tried
+          } else {
+            const rate = (stats.timesCorrect / stats.timesAsked) * 100;
+            if (rate < 50) weight = 2.5;
+            else if (rate < 70) weight = 2;
+            else if (rate < 90) weight = 1.5;
+            else weight = 1;
+          }
+          return { question: q, weight, idx };
+        });
+
+        // Weighted selection without replacement
+        const selected = [];
+        const remaining = [...weighted];
+
+        for (let i = 0; i < 10; i++) {
+          const totalWeight = remaining.reduce((sum, q) => sum + q.weight, 0);
+          let random = Math.random() * totalWeight;
+
+          for (let j = 0; j < remaining.length; j++) {
+            random -= remaining[j].weight;
+            if (random <= 0) {
+              selected.push(remaining[j].question);
+              remaining.splice(j, 1);
+              break;
+            }
+          }
+        }
+
+        return selected;
+      };
+
       const startTest = () => {
-        const shuffled = shuffleArray(QUESTIONS);
-        const selected = shuffled.slice(0, 10);
+        const selected = selectWeightedQuestions(history);
         setSelectedQuestions(selected);
         setCurrentQuestion(0);
         setUserAnswer('');
